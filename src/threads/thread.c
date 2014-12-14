@@ -204,10 +204,14 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
-  intr_set_level (old_level);
-
   /* Add to run queue. */
   thread_unblock (t);
+
+  old_level = intr_disable ();
+  if(t->priority > thread_current()->priority)
+    thread_yield();
+
+  intr_set_level (old_level);
 
   return tid;
 }
@@ -248,6 +252,7 @@ thread_unblock (struct thread *t)
   list_push_back (&ready_list, &t->elem);
   list_sort (&ready_list, cmp_priority, NULL);
   t->status = THREAD_READY;
+
   intr_set_level (old_level);
 }
 
@@ -348,6 +353,19 @@ void
 thread_set_priority (int new_priority) 
 {
   thread_current ()->priority = new_priority;
+
+  enum intr_level old_level;
+
+  old_level = intr_disable ();
+  if(!list_empty(&ready_list))
+  {
+    struct list_elem *front = list_front(&ready_list);
+    struct thread *fthread = list_entry (front, struct thread, elem);
+
+    if(fthread->priority > thread_current ()->priority)
+      thread_yield();
+  }
+  intr_set_level (old_level);
 }
 
 /* Returns the current thread's priority. */
