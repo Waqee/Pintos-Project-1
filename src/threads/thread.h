@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include <kernel/list.h>
+#include "fxpt.h"
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -105,6 +106,10 @@ struct thread
     struct list pot_donors;
 
     struct lock *blocked;
+
+    int nice;
+
+    int recent_cpu;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

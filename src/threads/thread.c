@@ -394,7 +394,7 @@ thread_get_priority (void)
 void
 thread_set_nice (int nice UNUSED) 
 {
-  /* Not yet implemented. */
+  thread_current()->nice = nice;
 }
 
 /* Returns the current thread's nice value. */
@@ -402,7 +402,7 @@ int
 thread_get_nice (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
@@ -410,7 +410,7 @@ int
 thread_get_load_avg (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return tointround(mulin(load_average,100));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -418,7 +418,7 @@ int
 thread_get_recent_cpu (void) 
 {
   /* Not yet implemented. */
-  return 0;
+  return tointround(mulin(thread_current()->recent_cpu,100)) ;
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -504,13 +504,20 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-  t->priority = priority;
+  if(thread_mlfqs)
+  {
+
+  }
+  else
+    t->priority = priority;
   t->magic = THREAD_MAGIC;
   t->basepriority = priority;
   t->locker = NULL;
   t->blocked = NULL;
   list_init (&t->pot_donors);
   list_push_back (&all_list, &t->allelem);
+
+  printf("%s %s\n", running_thread()->name, t->name);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
