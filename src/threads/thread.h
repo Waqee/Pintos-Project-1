@@ -94,7 +94,17 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+    struct list_elem donorelem;
+
     int64_t waketick;
+
+    int basepriority;
+
+    struct thread *locker;
+
+    struct list pot_donors;
+
+    struct lock *blocked;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
