@@ -204,30 +204,32 @@ lock_acquire (struct lock *lock)
 
   enum intr_level old_level = intr_disable ();
 
-  if(lock->holder)
+  if(!thread_mlfqs)
   {
-    thread_current()->locker = lock->holder;
-
-    list_push_front(&lock->holder->pot_donors,&thread_current()->donorelem);
-
-    thread_current()->blocked = lock;
-
-    struct thread *temp = thread_current();
-
-
-    while(temp->locker!=NULL)
+    if(lock->holder)
     {
-      if(temp->priority > temp->locker->priority)
+      thread_current()->locker = lock->holder;
+
+      list_push_front(&lock->holder->pot_donors,&thread_current()->donorelem);
+
+      thread_current()->blocked = lock;
+
+      struct thread *temp = thread_current();
+
+
+      while(temp->locker!=NULL)
       {
-        temp->locker->priority = temp->priority;
-        temp = temp->locker;
+        if(temp->priority > temp->locker->priority)
+        {
+          temp->locker->priority = temp->priority;
+          temp = temp->locker;
+        }
+
       }
-
     }
+    else
+      thread_current()->locker = NULL;
   }
-  else
-    thread_current()->locker = NULL;
-
 
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
@@ -293,43 +295,45 @@ lock_release (struct lock *lock)
   lock->holder = NULL;
 
   sema_up (&lock->semaphore);
-
-  if(list_empty(&thread_current()->pot_donors))
-    thread_set_priority(thread_current()->basepriority);
-  else
+  if(!thread_mlfqs)
   {
-    struct list_elem *e;
-
-    for (e = list_begin (&thread_current()->pot_donors); e != list_end (&thread_current()->pot_donors);
-         e = list_next (e))
-    {
-
-      struct thread *f = list_entry (e, struct thread, donorelem);
-      if(f->blocked == lock)
-      {
-        list_remove(e);
-        f->blocked = NULL;
-
-      }
-    }
-
-    if(!list_empty(&thread_current()->pot_donors))
-    {
-      struct list_elem *max_donor = list_max(&thread_current()->pot_donors, cmp_priority, NULL);
-      struct thread *max_donor_thread = list_entry(max_donor, struct thread, donorelem);
-
-      if(thread_current()->basepriority > max_donor_thread->priority)
-        thread_set_priority(thread_current()->basepriority);
-      else
-      {
-        thread_current()->priority = max_donor_thread->priority;
-        thread_yield();
-      }
-    }
-    else
+    if(list_empty(&thread_current()->pot_donors))
       thread_set_priority(thread_current()->basepriority);
-  }
+    else
+    {
+      struct list_elem *e;
 
+      for (e = list_begin (&thread_current()->pot_donors); e != list_end (&thread_current()->pot_donors);
+           e = list_next (e))
+      {
+
+        struct thread *f = list_entry (e, struct thread, donorelem);
+        if(f->blocked == lock)
+        {
+          list_remove(e);
+          f->blocked = NULL;
+
+        }
+      }
+
+      if(!list_empty(&thread_current()->pot_donors))
+      {
+        struct list_elem *max_donor = list_max(&thread_current()->pot_donors, cmp_priority, NULL);
+        struct thread *max_donor_thread = list_entry(max_donor, struct thread, donorelem);
+
+        if(thread_current()->basepriority > max_donor_thread->priority)
+          thread_set_priority(thread_current()->basepriority);
+        else
+        {
+          thread_current()->priority = max_donor_thread->priority;
+          thread_yield();
+        }
+      }
+      else
+        thread_set_priority(thread_current()->basepriority);
+    }
+  }
+  
   intr_set_level (old_level);
 }
 

@@ -1,6 +1,18 @@
 #include <stdint.h>
 
-#define F 14
+#define F 16384
+
+int tofxpt(int a);
+int tointfloor(int a);
+int tointround(int a);
+int addin(int a, int b);
+int addfx(int a, int b);
+int subin(int a, int b);
+int subfx(int a, int b);
+int mulin(int a, int b);
+int mulfx(int a, int b);
+int divin(int a, int b);
+int divfx(int a, int b);
 
 int tofxpt(int a)
 {
